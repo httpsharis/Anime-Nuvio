@@ -15,6 +15,8 @@ Compiled Anime Plugins with Multi Language Support.
 
 | Provider | Language | Quality | NuvioApp | NuvioTV |
 |---|---|---|---|---|
-| AnimeSalt | 🏴󠁧󠁢󠁥󠁮󠁧󠁿 🇮🇳  | 1080p / 720p | ✅ | ✅ |
+| AnimeSama | 🇫🇷 | 1080p / 720p | ✅ | ✅ |
+| AnimeSalt | 🏴󠁧󠁢󠁥󠁮󠁧󠁿 🇮🇳 | 1080p / 720p | ✅ | ✅ |
 | [![animekai.png](https://i.postimg.cc/cLCqcnFV/animekai.png)](https://postimg.cc/9r6Nmr5p) AnimeKai | 🏴󠁧󠁢󠁥󠁮󠁧󠁿 🇯🇵 | 1080p / 720p | ✅ | ✅ |
-| AnimeWish | 🏴󠁧󠁢󠁥󠁮󠁧󠁿  | 1080p / 720p | ✅ | ✅ |
+| AnimeWish | 🏴󠁧󠁢󠁥󠁮󠁧󠁿 🇯🇵 | 1080p / 720p | ✅ | ✅ |
+| AnimeWorld | 🏴󠁧󠁢󠁥󠁮󠁧󠁿 🇮🇳 | 1080p / 720p | ✅ | ✅ |
