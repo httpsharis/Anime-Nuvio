@@ -15,8 +15,8 @@ Compiled Anime Plugins with Multi Language Support.
 
 | Provider | Language | Quality | NuvioApp | NuvioTV |
 |---|---|---|---|---|
-| AllWish | 🏴󠁧󠁢󠁥󠁮󠁧󠁿 🇯🇵 | 1080p / 720p | ✅ | ✅ |
-| AnimeSama | 🇫🇷 | 1080p / 720p | ✅ | ✅ |
-| AnimeSalt | 🏴󠁧󠁢󠁥󠁮󠁧󠁿 🇮🇳 | 1080p / 720p | ✅ | ✅ |
+| [![allwish.png](https://i.postimg.cc/sgPDCG12/allwish.png)](https://postimg.cc/jD5rz5HV) AllWish | 🏴󠁧󠁢󠁥󠁮󠁧󠁿 🇯🇵 | 1080p / 720p | ✅ | ✅ |
+| [![animesama.png](https://i.postimg.cc/nhKcf9Mz/animesama.png)](https://postimg.cc/qNRd8RsV) AnimeSama | 🇫🇷 | 1080p / 720p | ✅ | ✅ |
+| [![animesalt.png](https://i.postimg.cc/Bn5QfPtt/animesalt.png)](https://postimg.cc/TKwXrwVX) AnimeSalt | 🏴󠁧󠁢󠁥󠁮󠁧󠁿 🇮🇳 | 1080p / 720p | ✅ | ✅ |
 | [![animekai.png](https://i.postimg.cc/cLCqcnFV/animekai.png)](https://postimg.cc/9r6Nmr5p) AnimeKai | 🏴󠁧󠁢󠁥󠁮󠁧󠁿 🇯🇵 | 1080p / 720p | ✅ | ✅ |
-| AnimeWorld | 🏴󠁧󠁢󠁥󠁮󠁧󠁿 🇮🇳 | 1080p / 720p | ✅ | ✅ |
+| [![animeworld.png](https://i.postimg.cc/8zdPgfsc/animeworld.png)](https://postimg.cc/cvHNQHRG) AnimeWorld | 🏴󠁧󠁢󠁥󠁮󠁧󠁿 🇮🇳 | 1080p / 720p | ✅ | ✅ |
