@@ -1,0 +1,86 @@
+{
+  "name": "D3adlyRocket",
+  "version": "1.0.0",
+  "scrapers": [
+    {
+      "id": "hianime",
+      "name": "HiAnime",
+      "description": "HiAnime - Anime and Asian content streaming",
+      "version": "2.0.0",
+      "author": "JK",
+      "supportedTypes": ["movie", "tv"],
+      "filename": "src/providers/hianime.js",
+      "enabled": true,
+      "formats": ["mp4", "mkv", "m3u8"],
+      "logo": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/hianime.png",
+      "contentLanguage": ["en", "hi"]
+    },
+    { 
+      "id": "allwish",
+      "name": "🌟 All-Wish",
+      "description": "All-Wish TV episodes via All-Wish servers",
+      "version": "1.0.0",
+      "author": "Kabir",
+      "supportedTypes": ["movie", "tv"],
+      "filename": "providers/allwish.js",
+      "enabled": true,
+      "limited": true,
+      "formats": ["mp4", "m3u8"],
+      "logo": "https://i.postimg.cc/WpFW45WQ/allwish.png",
+      "contentLanguage": ["en", "ja"]
+    },
+    {
+      "id": "animekai",
+      "name": "AnimeKai",
+      "description": "AnimeKai TV episodes via AnimeKai servers",
+      "version": "1.0.0",
+      "author": "Nuvio Team",
+      "supportedTypes": ["movie", "tv"],
+      "filename": "providers/animekai.js",
+      "enabled": true,
+      "limited": true,
+      "formats": ["mp4", "m3u8"],
+      "logo": "https://i.postimg.cc/MKJd7fy7/animekai.png",
+      "contentLanguage": ["en"]
+    },
+    {
+      "id": "animesalt",
+      "name": "🧂 AnimeSalt",
+      "description": "AnimeSalt India",
+      "version": "1.0.0",
+      "author": "Kabir",
+      "supportedTypes": ["movie", "tv"],
+      "filename": "providers/animesalt.js",
+      "enabled": true,
+      "formats": ["m3u8", "mp4"],
+      "logo": "https://i.postimg.cc/1X24MYhg/animesalt.png",
+      "contentLanguage": ["hi", "en", "ja"]
+    },
+    {
+      "id": "animeworld",
+      "name": "🗡️ AnimeWorld",
+      "description": "Watch AnimeWorld India",
+      "version": "1.0.0",
+      "author": "Kabir",
+      "supportedTypes": ["movie", "tv"],
+      "filename": "providers/animeworld.js",
+      "enabled": true,
+      "formats": ["m3u8"],
+      "logo": "https://i.postimg.cc/wxD6rVKX/animeworld.png",
+      "contentLanguage": ["hi", "en", "ja"]
+    },
+    {
+      "id": "anime-sama",
+      "name": "🐍 Anime-Sama",
+      "description": "Watch AnimeSama France",
+      "version": "1.1.27",
+      "author": "Gowaru",
+      "supportedTypes": ["movie", "tv"],
+      "filename": "providers/anime-sama.js",
+      "enabled": true,
+      "formats": ["mp4", "mkv"],
+      "logo": "https://i.postimg.cc/tgYt2pYG/animesama.png",
+      "contentLanguage": ["fr"]  
+    }
+  ]
+}
