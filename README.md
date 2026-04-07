@@ -7,7 +7,7 @@ Compiled Anime Plugins with Multi Language Support.
 2. Go to **Settings → Local Scrapers**
 3. Add this repository URL:
    ```
-   https://raw.githubusercontent.com/D3adlyRocket/Anime-Nuvio/refs/heads/main/manifest.json
+   https://raw.githubusercontent.com/D3adlyRocket/Anime-Nuvio/refs/heads/main/manifest.js
    ```
 4. Enable the scrapers you want to use
 
