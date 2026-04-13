@@ -94,7 +94,7 @@
       "formats": ["m3u8"],
       "logo": "https://www.animeunity.so/favicon.ico",
       "limited": false,
-      "supportsExternalPlayer": true
+      "supportsExternalPlayer": true,
       "contentLanguage": ["it"]  
     }
   ]
