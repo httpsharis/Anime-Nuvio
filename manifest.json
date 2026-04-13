@@ -83,17 +83,17 @@
       "contentLanguage": ["fr"]  
     },
     {
-      "id": "animeav1",
-      "name": "AnimeAV1",
-      "description": "Anime en Sub Español desde AnimeAV1.com. Sin Cloudflare, catálogo enorme",
-      "version": "1.1.0",
-      "author": "custom",
+      "id": "animepahe",
+      "name": "AnimePahe",
+      "description": "AnimePahe",
+      "version": "1.0.0",
+      "author": "Nuvio Team",
       "supportedTypes": ["movie", "tv"],
-      "filename": "providers/animeav1.js",
+      "filename": "providers/animepahe.js",
       "enabled": true,
       "formats": ["m3u8", "mp4"],
-      "logo": "https://animeav1.com/img/logo.svg",
-      "contentLanguage": ["es"]  
+      "logo": "",
+      "contentLanguage": ["en"]  
     }
   ]
 }
