@@ -85,15 +85,15 @@
     {
       "id": "animepahe",
       "name": "AnimePahe",
-      "description": "AnimePahe",
-      "version": "1.0.0",
+      "description": "Watch anime online free in HD with fast streaming servers. Stream latest anime episodes and movies daily",
+      "version": "1.0.1",
       "author": "Nuvio Team",
       "supportedTypes": ["movie", "tv"],
       "filename": "providers/animepahe.js",
       "enabled": true,
       "formats": ["m3u8", "mp4"],
-      "logo": "",
-      "contentLanguage": ["en"]  
+      "logo": "https://i.postimg.cc/c4ZBGNNs/animepahe.png",
+      "contentLanguage": ["en", "ja"]  
     }
   ]
 }
