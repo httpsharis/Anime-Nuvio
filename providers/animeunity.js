@@ -13,8 +13,8 @@ var BASE_URL = "https://www.animeunity.so";
 
 var BROWSER_HEADERS = {
   "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-  "Referer": BASE_URL + "/",
-  "Origin": BASE_URL,
+  "Referer": 'https://www.animeunity.so';
+  "Origin": 'https://www.animeunity.so';
   "Accept": "application/json, text/plain, */*",
   "Accept-Language": "it-IT,it;q=0.9,en;q=0.8",
   "X-Requested-With": "XMLHttpRequest"
