@@ -81,6 +81,19 @@
       "formats": ["mp4", "mkv"],
       "logo": "https://i.postimg.cc/tgYt2pYG/animesama.png",
       "contentLanguage": ["fr"]  
+    },
+    {
+      "id": "animeunity",
+      "name": "🇮🇹 AnimeUnity",
+      "description": "Watch AnimeUnity Italy",
+      "version": "1.1.27",
+      "author": "Gowaru",
+      "supportedTypes": ["movie", "tv"],
+      "filename": "providers/animeunity.js",
+      "enabled": true,
+      "formats": ["mp4", "mkv"],
+      "logo": "",
+      "contentLanguage": ["it"]  
     }
   ]
 }
