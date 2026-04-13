@@ -83,17 +83,17 @@
       "contentLanguage": ["fr"]  
     },
     {
-      "id": "animeunity",
-      "name": "AnimeUnity",
-      "description": "Anime Sub ITA e ITA da AnimeUnity.so",
+      "id": "animeav1",
+      "name": "AnimeAV1",
+      "description": "Anime en Sub Español desde AnimeAV1.com. Sin Cloudflare, catálogo enorme",
       "version": "1.1.0",
       "author": "custom",
       "supportedTypes": ["movie", "tv"],
-      "filename": "providers/animeunity.js",
+      "filename": "providers/animeav1.js",
       "enabled": true,
-      "formats": ["m3u8"],
-      "logo": "https://www.animeunity.so/favicon.ico",
-      "contentLanguage": ["it"]  
+      "formats": ["m3u8", "mp4"],
+      "logo": "https://animeav1.com/img/logo.svg",
+      "contentLanguage": ["es"]  
     }
   ]
 }
