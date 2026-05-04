@@ -39,7 +39,7 @@
       "filename": "providers/animesdigital.js",
       "enabled": true,
       "formats": ["mp4", "m3u8"],
-      "logo": "",
+      "logo": "https://i.postimg.cc/vTMZgBfy/animesdigital.jpg",
       "contentLanguage": ["pt", "ja"]
     },
     {
