@@ -1,395 +1,586 @@
-/**
- * AllWish provider for Nuvio
- * ported from phisher98, ported by kabir
- * 
- * FIXED: Anime-only validation added.
- */
-
-const cheerio = require('cheerio-without-node-native');
-
-const TMDB_API_KEY = '439c478a771f35c05022f9feabcca01c';
-const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-const MAIN_URL = 'https://all-wish.me';
-const AJAX_HEADERS = {
-    'X-Requested-With': 'XMLHttpRequest',
-    'User-Agent': 'Mozilla/5.0',
+var __defProp = Object.defineProperty;
+var __defProps = Object.defineProperties;
+var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
+var __getOwnPropSymbols = Object.getOwnPropertySymbols;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __propIsEnum = Object.prototype.propertyIsEnumerable;
+var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __spreadValues = (a, b) => {
+  for (var prop in b || (b = {}))
+    if (__hasOwnProp.call(b, prop))
+      __defNormalProp(a, prop, b[prop]);
+  if (__getOwnPropSymbols)
+    for (var prop of __getOwnPropSymbols(b)) {
+      if (__propIsEnum.call(b, prop))
+        __defNormalProp(a, prop, b[prop]);
+    }
+  return a;
+};
+var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
+var __async = (__this, __arguments, generator) => {
+  return new Promise((resolve, reject) => {
+    var fulfilled = (value) => {
+      try {
+        step(generator.next(value));
+      } catch (e) {
+        reject(e);
+      }
+    };
+    var rejected = (value) => {
+      try {
+        step(generator.throw(value));
+      } catch (e) {
+        reject(e);
+      }
+    };
+    var step = (x) => x.done ? resolve(x.value) : Promise.resolve(x.value).then(fulfilled, rejected);
+    step((generator = generator.apply(__this, __arguments)).next());
+  });
 };
 
-function fetchText(url, options = {}) {
-    return fetch(url, {
-        headers: {
-            'User-Agent': 'Mozilla/5.0',
-            ...(options.headers || {}),
-        },
-        ...options,
-    }).then(res => {
-        if (!res.ok) {
-            throw new Error(`HTTP ${res.status} for ${url}`);
+// src/allwish/index.js
+var cheerio = require("cheerio-without-node-native");
+var CryptoJS = require("crypto-js");
+var PROVIDER_NAME = "AllWish";
+var MAIN_URL = "https://all-wish.me";
+var TMDB_API_KEY = "439c478a771f35c05022f9feabcca01c";
+var REQUEST_TIMEOUT = 12e3;
+var EPISODE_LIST_TIMEOUT = 3e4;
+var VRF_SECRET = "ysJhV6U27FVIjjuk";
+var HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+  "Accept-Language": "en-US,en;q=0.5",
+  "Connection": "keep-alive"
+};
+var AJAX_HEADERS = {
+  "X-Requested-With": "XMLHttpRequest",
+  "User-Agent": HEADERS["User-Agent"],
+  "Referer": MAIN_URL + "/"
+};
+function fetchSafe(_0) {
+  return __async(this, arguments, function* (url, options = {}, timeout = REQUEST_TIMEOUT) {
+    try {
+      const signal = typeof AbortSignal !== "undefined" && AbortSignal.timeout ? AbortSignal.timeout(timeout) : null;
+      const merged = __spreadProps(__spreadValues({}, options), { headers: __spreadValues(__spreadValues({}, HEADERS), options.headers || {}) });
+      if (signal)
+        merged.signal = signal;
+      const res = yield fetch(url, merged);
+      return res;
+    } catch (e) {
+      console.error("[" + PROVIDER_NAME + "] fetchSafe: " + (url || "").substring(0, 100) + " -> " + e.message);
+      return null;
+    }
+  });
+}
+function fetchJson(_0) {
+  return __async(this, arguments, function* (url, options = {}, timeout) {
+    try {
+      const res = yield fetchSafe(url, options, timeout);
+      if (!res || !res.ok)
+        return null;
+      return JSON.parse(yield res.text());
+    } catch (e) {
+      console.error("[" + PROVIDER_NAME + "] fetchJson: " + (url || "").substring(0, 100) + " -> " + e.message);
+      return null;
+    }
+  });
+}
+function fetchHtml(_0) {
+  return __async(this, arguments, function* (url, options = {}) {
+    try {
+      const res = yield fetchSafe(url, options);
+      if (!res || !res.ok)
+        return null;
+      return cheerio.load(yield res.text());
+    } catch (e) {
+      console.error("[" + PROVIDER_NAME + "] fetchHtml: " + (url || "").substring(0, 100) + " -> " + e.message);
+      return null;
+    }
+  });
+}
+function makeStream(name, title, url, quality, headers = {}, subtitles) {
+  const stream = {
+    name: PROVIDER_NAME + " | " + name,
+    title: title || "",
+    url: url || "",
+    quality: quality || "HD",
+    headers: __spreadValues({ "User-Agent": HEADERS["User-Agent"] }, headers || {})
+  };
+  if (subtitles && Array.isArray(subtitles) && subtitles.length > 0) {
+    stream.subtitles = subtitles;
+  }
+  return stream;
+}
+function buildStreamLabels(serverType, quality, label, showInfo) {
+  const q = quality || "HD";
+  const displayName = q + (label ? " " + label : "");
+  let titleLine = "";
+  if (showInfo && showInfo.title) {
+    if (showInfo.mediaType === "tv" && showInfo.season != null && showInfo.episode != null) {
+      titleLine = showInfo.title + "\nS" + showInfo.season + " E" + showInfo.episode + " \xB7 " + q + " \xB7 HLS";
+    } else {
+      titleLine = showInfo.title + "\n" + q + " \xB7 HLS";
+    }
+  } else {
+    titleLine = serverType + (label ? " " + label : "") + "\n" + q + " \xB7 HLS";
+  }
+  titleLine += "\nby piratezoro9";
+  return { name: displayName, title: titleLine };
+}
+function dedupe(streams) {
+  const seen = /* @__PURE__ */ new Set();
+  return (streams || []).filter((s) => {
+    if (!s || !s.url || seen.has(s.url))
+      return false;
+    seen.add(s.url);
+    return true;
+  });
+}
+function getTMDBInfo(tmdbId, mediaType) {
+  return __async(this, null, function* () {
+    const idStr = String(tmdbId || "").trim();
+    const isImdb = idStr.startsWith("tt");
+    const tmdbType = mediaType === "tv" || mediaType === "series" ? "tv" : "movie";
+    try {
+      if (isImdb) {
+        const data = yield fetchJson("https://api.themoviedb.org/3/find/" + idStr + "?api_key=" + TMDB_API_KEY + "&external_source=imdb_id");
+        const list = data ? tmdbType === "tv" ? data.tv_results : data.movie_results : null;
+        if (list && list.length > 0) {
+          const item = list[0];
+          return {
+            id: item.id,
+            title: tmdbType === "tv" ? item.name : item.title,
+            originalTitle: tmdbType === "tv" ? item.original_name : item.original_title,
+            year: (item.first_air_date || item.release_date || "").split("-")[0],
+            genres: item.genre_ids || [],
+            imdbId: idStr
+          };
         }
-        return res.text();
-    });
-}
-
-function fetchJson(url, options = {}) {
-    return fetchText(url, options).then(JSON.parse);
-}
-
-function normalizeText(text) {
-    return String(text || '')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, ' ')
-        .replace(/\b(tv|dub|sub|subbed|dubbed|season|part|movie|specials?)\b/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-}
-
-function tokenize(text) {
-    return normalizeText(text).split(' ').filter(Boolean);
-}
-
-function scoreTitleMatch(candidate, query) {
-    const queryTokens = tokenize(query);
-    if (!queryTokens.length) return 0;
-    const candidateTokens = new Set(tokenize(candidate));
-    let score = 0;
-    queryTokens.forEach(token => {
-        if (candidateTokens.has(token)) score += 10;
-    });
-    const normalizedCandidate = normalizeText(candidate);
-    const normalizedQuery = normalizeText(query);
-    if (normalizedCandidate.includes(normalizedQuery)) score += 20;
-    if (normalizedCandidate === normalizedQuery) score += 100;
-    if (/\bspecials?\b/i.test(candidate)) score -= 40;
-    if (/\breawakening\b/i.test(candidate)) score -= 30;
-    if (/\bseason\s*2\b/i.test(candidate)) score -= 25;
-    return score;
-}
-
-function getTmdbDetails(tmdbId, mediaType) {
-    const type = mediaType === 'movie' ? 'movie' : 'tv';
-    const url = `${TMDB_BASE_URL}/${type}/${tmdbId}?api_key=${TMDB_API_KEY}`;
-    return fetchJson(url).then(data => ({
-        title: mediaType === 'movie' ? data.title : data.name,
-        originalTitle: mediaType === 'movie' ? data.original_title : data.original_name,
-        year: (mediaType === 'movie' ? data.release_date : data.first_air_date)?.split('-')?.[0] || null,
-        genres: (data.genres || []).map(g => g.id),
-    }));
-}
-
-function searchAllWish(mediaInfo) {
-    const queries = [mediaInfo.title, mediaInfo.originalTitle]
-        .filter((value, index, arr) => value && arr.indexOf(value) === index);
-
-    return queries.reduce((promise, query) => promise.then(result => {
-        if (result) return result;
-        const url = `${MAIN_URL}/filter?keyword=${encodeURIComponent(query)}&page=1`;
-        return fetchText(url).then(html => {
-            const $ = cheerio.load(html);
-            const matches = $('div.item').map((_, el) => {
-                const title = $(el).find('div.name > a').text().trim();
-                const href = $(el).find('div.name > a').attr('href');
-                if (!title || !href) return null;
-                const watchUrl = href.replace(/\/ep-\d+\/?$/i, '');
-                return {
-                    title,
-                    watchUrl,
-                    score: scoreTitleMatch(title, query),
-                };
-            }).get().filter(Boolean).sort((a, b) => b.score - a.score);
-            return matches[0] || null;
-        }).catch(() => null);
-    }), Promise.resolve(null));
-}
-
-function generateEpisodeVrf(episodeId) {
-    const secretKey = 'ysJhV6U27FVIjjuk';
-    const encodedId = encodeURIComponent(episodeId)
-        .replace(/%21/g, '!')
-        .replace(/%27/g, "'")
-        .replace(/%28/g, '(')
-        .replace(/%29/g, ')')
-        .replace(/%7E/g, '~')
-        .replace(/%2A/g, '*');
-
-    const keyCodes = Array.from(secretKey).map(ch => ch.charCodeAt(0));
-    const dataCodes = Array.from(encodedId).map(ch => ch.charCodeAt(0));
-    const n = Array.from({ length: 256 }, (_, i) => i);
-    let a = 0;
-    for (let o = 0; o <= 255; o += 1) {
-        a = (a + n[o] + keyCodes[o % keyCodes.length]) % 256;
-        [n[o], n[a]] = [n[a], n[o]];
+        return { id: idStr, title: idStr, originalTitle: idStr, year: null, genres: [], imdbId: idStr };
+      } else {
+        const data = yield fetchJson("https://api.themoviedb.org/3/" + tmdbType + "/" + idStr + "?api_key=" + TMDB_API_KEY + "&append_to_response=external_ids");
+        if (data) {
+          return {
+            id: data.id,
+            title: tmdbType === "tv" ? data.name : data.title,
+            originalTitle: tmdbType === "tv" ? data.original_name : data.original_title,
+            year: (data.first_air_date || data.release_date || "").split("-")[0],
+            genres: (data.genres || []).map((g) => g.id),
+            imdbId: data.imdb_id || data.external_ids && data.external_ids.imdb_id || null
+          };
+        }
+      }
+    } catch (e) {
+      console.error("[" + PROVIDER_NAME + "] TMDB error: " + e.message);
     }
-
-    const out = [];
-    let o = 0;
-    a = 0;
-    for (let r = 0; r < dataCodes.length; r += 1) {
-        o = (o + 1) % 256;
-        a = (a + n[o]) % 256;
-        [n[o], n[a]] = [n[a], n[o]];
-        const k = n[(n[o] + n[a]) % 256];
-        out.push((dataCodes[r] ^ k) & 0xff);
+    return { id: idStr, title: idStr, originalTitle: idStr, year: null, genres: [], imdbId: null };
+  });
+}
+function cleanTitle(t) {
+  return String(t || "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+}
+function tokenize(t) {
+  return cleanTitle(t).split(" ").filter(Boolean);
+}
+function scoreTitle(resultTitle, queryTitle, queryYear, season) {
+  const qTokens = tokenize(queryTitle);
+  if (!qTokens.length)
+    return 0;
+  const rTokens = new Set(tokenize(resultTitle));
+  const rLower = cleanTitle(resultTitle);
+  const qLower = cleanTitle(queryTitle);
+  const rTokenList = tokenize(resultTitle);
+  if (rLower === qLower)
+    return 1.5;
+  const rCleanSuffix = rLower.replace(/\s+tv$/, "").replace(/\s+movie$/, "").replace(/\s+anime$/, "").replace(/\s+specials?$/, "").trim();
+  if (rCleanSuffix === qLower)
+    return 1.4;
+  let matchCount = 0;
+  for (const t of qTokens) {
+    if (rTokens.has(t))
+      matchCount++;
+  }
+  let score = matchCount / Math.max(qTokens.length, 1);
+  if (rLower.startsWith(qLower)) {
+    score += 0.3;
+    const extraTokens = rTokenList.length - qTokens.length;
+    if (extraTokens > 2) {
+      score -= Math.min(extraTokens * 0.1, 0.4);
     }
-
-    const bytesToBase64Url = bytes => {
-        let binary = '';
-        bytes.forEach(byte => {
-            binary += String.fromCharCode(byte);
+    const qualifierWords = [
+      "part",
+      "parts",
+      "season",
+      "movie",
+      "movies",
+      "special",
+      "specials",
+      "ova",
+      "film",
+      "films",
+      "the"
+    ];
+    const extraQualifierCount = rTokenList.slice(qTokens.length).filter((t) => qualifierWords.includes(t)).length;
+    if (extraQualifierCount > 0)
+      score -= 0.2;
+  } else if (qTokens.length <= 4 && matchCount === qTokens.length) {
+    score -= 0.4;
+  }
+  if (queryYear) {
+    const yearRegex = /\b(19|20)\d{2}\b/;
+    const rYearMatch = rLower.match(yearRegex);
+    if (rYearMatch && Math.abs(parseInt(rYearMatch[0]) - parseInt(queryYear)) <= 1) {
+      score += 0.5;
+    } else if (rYearMatch) {
+      const gap = Math.abs(parseInt(rYearMatch[0]) - parseInt(queryYear));
+      score -= Math.min(gap * 0.1, 0.8);
+    }
+  }
+  if (season && Number(season) > 1) {
+    const sNum = Number(season);
+    const hasSeason = rLower.match(
+      new RegExp("\\b" + sNum + "(?:st|nd|rd|th)\\s+season|season\\s*" + sNum + "|\\bpart\\s*" + sNum, "i")
+    );
+    if (hasSeason) {
+      score += 0.4;
+    } else {
+      const mentionsAnySeason = rLower.match(/\b(?:season|part)\s*\d+/i);
+      if (!mentionsAnySeason) {
+        score -= 0.3;
+      }
+    }
+  }
+  return Math.min(score, 2);
+}
+function searchAllWish(title, originalTitle, year, season) {
+  return __async(this, null, function* () {
+    try {
+      const queries = [];
+      if (title)
+        queries.push(title);
+      if (originalTitle && originalTitle !== title)
+        queries.push(originalTitle);
+      if (season && Number(season) > 1) {
+        const sNum = Number(season);
+        if (title) {
+          queries.push(title + " " + sNum);
+          queries.push(title + " season " + sNum);
+        }
+      }
+      const results = [];
+      for (const q of queries) {
+        const $ = yield fetchHtml(MAIN_URL + "/filter?keyword=" + encodeURIComponent(q) + "&page=1");
+        if (!$)
+          continue;
+        $("div.item").each((i, el) => {
+          const itemTitle = $(el).find("div.name > a").text().trim();
+          const href = $(el).find("div.name > a").attr("href");
+          if (itemTitle && href) {
+            const watchUrl = href.replace(/\/ep-\d+\/?$/i, "");
+            results.push({
+              title: itemTitle,
+              watchUrl,
+              query: q
+            });
+          }
         });
-        return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_');
-    };
-
-    const latin1StringToBytes = value => {
-        const bytes = new Uint8Array(value.length);
-        for (let i = 0; i < value.length; i += 1) {
-            bytes[i] = value.charCodeAt(i) & 0xff;
+        if (results.length > 0)
+          break;
+      }
+      if (results.length === 0)
+        return null;
+      let best = null;
+      let bestScore = -1;
+      for (const r of results) {
+        const s1 = scoreTitle(r.title, title || "", year || null, season);
+        const s2 = originalTitle ? scoreTitle(r.title, originalTitle, year || null, season) : 0;
+        const score = Math.max(s1, s2);
+        if (score > bestScore) {
+          bestScore = score;
+          best = r;
         }
-        return bytes;
-    };
-
-    const base1 = bytesToBase64Url(out);
-    const step2 = latin1StringToBytes(base1).map((value, index) => {
-        let s = value;
-        s += ({ 1: 3, 7: 5, 2: -4, 4: -2, 6: 4, 0: -3, 3: 2, 5: 5 }[index % 8] || 0);
-        return s & 0xff;
-    });
-    const base2 = bytesToBase64Url(step2);
-
-    return Array.from(base2).map(char => {
-        if (char >= 'A' && char <= 'Z') return String.fromCharCode((char.charCodeAt(0) - 65 + 13) % 26 + 65);
-        if (char >= 'a' && char <= 'z') return String.fromCharCode((char.charCodeAt(0) - 97 + 13) % 26 + 97);
-        return char;
-    }).join('');
-}
-
-function chooseEpisode($, mediaType, episode) {
-    const entries = $('div.range > div > a').map((_, el) => ({
-        slug: parseInt($(el).attr('data-slug') || '0', 10),
-        ids: $(el).attr('data-ids') || '',
-        hasSub: $(el).attr('data-sub') === '1',
-        hasDub: $(el).attr('data-dub') === '1',
-    })).get().filter(item => item.ids);
-
-    if (!entries.length) return null;
-    if (mediaType === 'movie' || episode == null) return entries[0];
-    return entries.find(item => item.slug === Number(episode)) || null;
-}
-
-function decodeUnicodeEscapes(value) {
-    return String(value || '').replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
-}
-
-function extractScriptData(html) {
-    const script = cheerio.load(html)('script[type=module]').html() || '';
-    const videoB64 = script.match(/video_b64:\s*"([^"]+)"/)?.[1];
-    const keyB64 = script.match(/enc_key_b64:\s*"([^"]+)"/)?.[1];
-    const ivB64 = script.match(/iv_b64:\s*"([^"]+)"/)?.[1];
-    const subtitlesRaw = script.match(/subtitles:\s*"([^"]*)"/)?.[1];
-    return { videoB64, keyB64, ivB64, subtitlesRaw };
-}
-
-function base64ToBytes(base64) {
-    const binary = atob(base64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i += 1) {
-        bytes[i] = binary.charCodeAt(i);
+      }
+      if (bestScore < 0.3) {
+        console.log("[" + PROVIDER_NAME + "] Title match score too low: " + bestScore);
+        return null;
+      }
+      console.log("[" + PROVIDER_NAME + '] Best match: "' + best.title + '" score=' + bestScore.toFixed(2));
+      return best;
+    } catch (e) {
+      console.error("[" + PROVIDER_NAME + "] Search error: " + e.message);
+      return null;
     }
-    return bytes;
+  });
 }
-
-function pkcs7Unpad(buffer) {
-    const pad = buffer[buffer.length - 1];
-    return buffer.subarray(0, buffer.length - pad);
+function generateEpisodeVrf(episodeId) {
+  const encodedId = encodeURIComponent(episodeId).replace(/%21/g, "!").replace(/%27/g, "'").replace(/%28/g, "(").replace(/%29/g, ")").replace(/%7E/g, "~").replace(/%2A/g, "*").replace(/%20/g, "%20");
+  const keyCodes = Array.from(VRF_SECRET).map((ch) => ch.charCodeAt(0));
+  const dataCodes = Array.from(encodedId).map((ch) => ch.charCodeAt(0));
+  const n = Array.from({ length: 256 }, (_, i) => i);
+  let a = 0;
+  for (let o2 = 0; o2 <= 255; o2++) {
+    a = (a + n[o2] + keyCodes[o2 % keyCodes.length]) % 256;
+    [n[o2], n[a]] = [n[a], n[o2]];
+  }
+  const out = [];
+  let o = 0;
+  a = 0;
+  for (let r = 0; r < dataCodes.length; r++) {
+    o = (o + 1) % 256;
+    a = (a + n[o]) % 256;
+    [n[o], n[a]] = [n[a], n[o]];
+    const k = n[(n[o] + n[a]) % 256];
+    out.push((dataCodes[r] ^ k) & 255);
+  }
+  function bytesToB64(bytes) {
+    let binary = "";
+    for (const b of bytes)
+      binary += String.fromCharCode(b);
+    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+  const base1 = bytesToB64(out);
+  const transform = { 0: -3, 1: 3, 2: -4, 3: 2, 4: -2, 5: 5, 6: 4, 7: 5 };
+  const step2 = Array.from(base1).map((ch, i) => {
+    let s = ch.charCodeAt(0);
+    s += transform[i % 8] || 0;
+    return s & 255;
+  });
+  const base2 = bytesToB64(step2);
+  const rot13 = (c) => {
+    if (c >= "A" && c <= "Z")
+      return String.fromCharCode((c.charCodeAt(0) - 65 + 13) % 26 + 65);
+    if (c >= "a" && c <= "z")
+      return String.fromCharCode((c.charCodeAt(0) - 97 + 13) % 26 + 97);
+    return c;
+  };
+  return Array.from(base2).map(rot13).join("");
 }
-
-async function decryptAesCbc(videoB64, keyB64, ivB64) {
-    if (!globalThis.crypto?.subtle || typeof TextDecoder === 'undefined') {
-        throw new Error('WebCrypto unavailable');
+function chooseEpisode($ep, season, episode, mediaType) {
+  const entries = $ep("div.range > div > a").map((i, el) => ({
+    slug: parseInt($ep(el).attr("data-slug") || "0", 10),
+    ids: $ep(el).attr("data-ids") || "",
+    hasSub: $ep(el).attr("data-sub") === "1",
+    hasDub: $ep(el).attr("data-dub") === "1",
+    malId: $ep(el).attr("data-mal") ? parseInt($ep(el).attr("data-mal"), 10) : null
+  })).get().filter((e) => e.ids);
+  if (!entries.length)
+    return null;
+  if (mediaType === "movie" || episode == null)
+    return entries[0];
+  const epNum = Number(episode);
+  return entries.find((e) => e.slug === epNum) || null;
+}
+function extractMegaPlay(url, label, showInfo) {
+  return __async(this, null, function* () {
+    try {
+      const pageHtml = yield fetchSafe(url, {
+        headers: __spreadProps(__spreadValues({}, HEADERS), { "X-Requested-With": "XMLHttpRequest", "Referer": "https://megaplay.buzz/" })
+      });
+      if (!pageHtml)
+        return [];
+      const $ = cheerio.load(yield pageHtml.text());
+      const id = $("#megaplay-player").attr("data-id");
+      if (!id)
+        return [];
+      const src = yield fetchJson("https://megaplay.buzz/stream/getSources?id=" + id + "&id=" + id, {
+        headers: __spreadProps(__spreadValues({}, HEADERS), { "X-Requested-With": "XMLHttpRequest", "Referer": "https://megaplay.buzz/" })
+      });
+      if (!src || !src.sources || !src.sources.file)
+        return [];
+      const subtitles = (src.tracks || []).filter((t) => t.kind === "captions" || t.kind === "subtitles").map((t) => ({ label: t.label || "Unknown", url: t.file })).filter((t) => t.url);
+      const labels = buildStreamLabels("MegaPlay", "1080p", label, showInfo);
+      return [makeStream(
+        labels.name,
+        labels.title,
+        src.sources.file,
+        "1080p",
+        {
+          "Referer": "https://megaplay.buzz/",
+          "Origin": "https://megaplay.buzz",
+          "User-Agent": HEADERS["User-Agent"]
+        },
+        subtitles.length > 0 ? subtitles : void 0
+      )];
+    } catch (e) {
+      console.error("[" + PROVIDER_NAME + "] MegaPlay error: " + e.message);
+      return [];
     }
-    const key = await globalThis.crypto.subtle.importKey(
-        'raw',
-        base64ToBytes(keyB64),
-        { name: 'AES-CBC' },
-        false,
-        ['decrypt']
-    );
-    const decrypted = await globalThis.crypto.subtle.decrypt(
-        { name: 'AES-CBC', iv: base64ToBytes(ivB64) },
+  });
+}
+function extractZen(url, label, showInfo) {
+  return __async(this, null, function* () {
+    try {
+      const res = yield fetchSafe(url, { headers: HEADERS });
+      if (!res)
+        return [];
+      const html = yield res.text();
+      const scriptMatch = html.match(/video_b64:\s*"([^"]+)"/);
+      const keyMatch = html.match(/enc_key_b64:\s*"([^"]+)"/);
+      const ivMatch = html.match(/iv_b64:\s*"([^"]+)"/);
+      const subMatch = html.match(/subtitles:\s*"([^"]*)"/);
+      if (!scriptMatch || !keyMatch || !ivMatch)
+        return [];
+      const videoB64 = scriptMatch[1];
+      const keyB64 = keyMatch[1];
+      const ivB64 = ivMatch[1];
+      const key = CryptoJS.enc.Base64.parse(keyB64);
+      const iv = CryptoJS.enc.Base64.parse(ivB64);
+      const encrypted = CryptoJS.enc.Base64.parse(videoB64);
+      const decrypted = CryptoJS.AES.decrypt(
+        { ciphertext: encrypted },
         key,
-        base64ToBytes(videoB64)
-    );
-    return new TextDecoder().decode(pkcs7Unpad(new Uint8Array(decrypted)));
-}
-
-function parseZenSubtitles(subtitlesRaw) {
-    if (!subtitlesRaw) return [];
-    try {
-        const jsonString = decodeUnicodeEscapes(subtitlesRaw).replace(/\\"/g, '"').replace(/\\\\\//g, '/');
-        const parsed = JSON.parse(jsonString);
-        return Array.isArray(parsed)
-            ? parsed.map(item => ({ label: item.language || 'Unknown', url: item.url })).filter(item => item.url)
-            : [];
-    } catch (_) {
+        { iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }
+      );
+      const videoUrl = decrypted.toString(CryptoJS.enc.Utf8);
+      if (!videoUrl)
         return [];
-    }
-}
-
-async function extractMegaPlay(url, streamLabel) {
-    const playerHeaders = {
-        Accept: '*/*',
-        'X-Requested-With': 'XMLHttpRequest',
-        Referer: 'https://megaplay.buzz',
-    };
-    const pageHtml = await fetchText(url, { headers: playerHeaders });
-    const $ = cheerio.load(pageHtml);
-    const id = $('#megaplay-player').attr('data-id');
-    if (!id) return [];
-    const sourceJson = await fetchJson(`https://megaplay.buzz/stream/getSources?id=${id}&id=${id}`, { headers: playerHeaders });
-    const file = sourceJson?.sources?.file;
-    if (!file) return [];
-    const subtitles = (sourceJson.tracks || [])
-        .filter(track => track.kind === 'captions' || track.kind === 'subtitles')
-        .map(track => ({ label: track.label, url: track.file }))
-        .filter(track => track.url);
-
-    return [{
-        name: `AllWish ${streamLabel} MegaPlay`,
-        title: streamLabel,
-        url: file,
-        quality: 'Unknown',
-        headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) rv:140.0) Gecko/20100101 Firefox/140.0',
-            Accept: '*/*',
-            'Accept-Language': 'en-US,en;q=0.5',
-            Origin: 'https://megaplay.buzz',
-            Referer: 'https://megaplay.buzz/',
-            Connection: 'keep-alive',
-            Pragma: 'no-cache',
-            'Cache-Control': 'no-cache',
-        },
-        subtitles,
-        provider: 'AllWish',
-    }];
-}
-
-async function extractZen(url, streamLabel) {
-    const pageHtml = await fetchText(url);
-    const { videoB64, keyB64, ivB64, subtitlesRaw } = extractScriptData(pageHtml);
-    if (!videoB64 || !keyB64 || !ivB64) return [];
-    const decryptedUrl = await decryptAesCbc(videoB64, keyB64, ivB64).catch(() => null);
-    if (!decryptedUrl) return [];
-    return [{
-        name: `AllWish ${streamLabel} Zen`,
-        title: streamLabel,
-        url: decryptedUrl.trim(),
-        quality: '1080p',
-        headers: {
-            Referer: 'https://player.sgsgsgsr.site/',
-            Origin: 'https://player.sgsgsgsr.site/',
-            'User-Agent': 'Mozilla/5.0',
-        },
-        subtitles: parseZenSubtitles(subtitlesRaw),
-        provider: 'AllWish',
-    }];
-}
-
-function uniqueStreams(streams) {
-    const seen = new Set();
-    return streams.filter(stream => {
-        const key = `${stream.name}|${stream.url}`;
-        if (!stream.url || seen.has(key)) return false;
-        seen.add(key);
-        return true;
-    });
-}
-
-async function resolveServerLinks(ids, allowedTypes) {
-    const serverList = await fetchJson(`${MAIN_URL}/ajax/server/list?servers=${encodeURIComponent(ids)}`, {
-        headers: AJAX_HEADERS,
-    }).catch(() => null);
-    if (serverList?.status !== 200) return [];
-
-    const $ = cheerio.load(serverList.result || '');
-    const sections = $('div.server-type').toArray();
-    const resolved = [];
-
-    for (const section of sections) {
-        const sectionType = $(section).attr('data-type');
-        const isHardSub = ($(section).find('span').first().text() || '').includes('H-Sub');
-        if (!allowedTypes.includes(sectionType)) continue;
-
-        const servers = $(section).find('div.server-list > div.server').toArray();
-        for (const server of servers) {
-            const dataId = $(server).attr('data-link-id');
-            const serverName = $(server).text().trim();
-            if (!dataId) continue;
-            const apiRes = await fetchJson(`${MAIN_URL}/ajax/server?get=${encodeURIComponent(dataId)}`, {
-                headers: AJAX_HEADERS,
-            }).catch(() => null);
-            const realUrl = apiRes?.result?.url;
-            if (!realUrl) continue;
-
-            const streamLabel = sectionType === 'dub'
-                ? '[Dub]'
-                : isHardSub
-                    ? '[Hard Sub]'
-                    : '[Sub]';
-
-            if (/megaplay\.buzz/i.test(realUrl)) {
-                resolved.push(...await extractMegaPlay(realUrl, streamLabel).catch(() => []));
-            } else if (/player\.sgsgsgsr\.site|zencloudz\.cc/i.test(realUrl) || /ZEN/i.test(serverName)) {
-                resolved.push(...await extractZen(realUrl, streamLabel).catch(() => []));
-            }
+      let subtitles = [];
+      if (subMatch && subMatch[1]) {
+        try {
+          const rawSubs = subMatch[1].replace(/\\"/g, '"').replace(/\\\\\//g, "/").replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+          const parsed = JSON.parse(rawSubs);
+          if (Array.isArray(parsed)) {
+            subtitles = parsed.filter((s) => s.url).map((s) => ({ label: s.language || "Unknown", url: s.url }));
+          }
+        } catch (e) {
         }
+      }
+      const labels = buildStreamLabels("Zen", "1080p", label, showInfo);
+      return [makeStream(
+        labels.name,
+        labels.title,
+        videoUrl.trim(),
+        "1080p",
+        {
+          "Referer": "https://player.sgsgsgsr.site/",
+          "Origin": "https://player.sgsgsgsr.site/"
+        },
+        subtitles.length > 0 ? subtitles : void 0
+      )];
+    } catch (e) {
+      console.error("[" + PROVIDER_NAME + "] Zen error: " + e.message);
+      return [];
     }
-
-    return uniqueStreams(resolved);
+  });
 }
-
-async function getStreams(tmdbId, mediaType = 'tv', season = null, episode = null) {
-    console.log(`[AllWish] Fetching ${mediaType} tmdbId=${tmdbId} season=${season} episode=${episode}`);
-
-    if (mediaType !== 'tv' && mediaType !== 'movie') return [];
-
+function resolveServers(ids, allowedTypes, showInfo) {
+  return __async(this, null, function* () {
     try {
-        const mediaInfo = await getTmdbDetails(tmdbId, mediaType);
-        if (!mediaInfo?.title) return [];
-
-        // VALIDATION: Reject content that is not categorized as Animation (TMDB ID: 16)
-        // Fallback: If genres are empty, proceed to search, as the site itself is anime-only.
-        if (mediaInfo.genres.length > 0 && !mediaInfo.genres.includes(16)) {
-            console.log(`[AllWish] Content is NOT Animation (Genres: ${mediaInfo.genres}). Rejecting.`);
+      const serverList = yield fetchJson(MAIN_URL + "/ajax/server/list?servers=" + encodeURIComponent(ids), {
+        headers: AJAX_HEADERS
+      });
+      if (!serverList || serverList.status !== 200)
+        return [];
+      const $ = cheerio.load(serverList.result || "");
+      const streams = [];
+      $("div.server-type").each((i, section) => {
+        const sectionType = $(section).attr("data-type");
+        const isHardSub = ($(section).find("span").first().text() || "").includes("H-Sub");
+        if (!allowedTypes.includes(sectionType))
+          return;
+        $(section).find("div.server-list > div.server").each((j, server) => {
+          const dataId = $(server).attr("data-link-id");
+          if (!dataId)
+            return;
+          streams.push({ dataId, sectionType, isHardSub });
+        });
+      });
+      if (streams.length === 0)
+        return [];
+      const results = yield Promise.all(streams.map((s) => __async(this, null, function* () {
+        try {
+          const apiRes = yield fetchJson(MAIN_URL + "/ajax/server?get=" + encodeURIComponent(s.dataId), {
+            headers: AJAX_HEADERS
+          });
+          if (!apiRes || !apiRes.result || !apiRes.result.url)
             return [];
+          const realUrl = apiRes.result.url;
+          const label = s.sectionType === "dub" ? "[Dub]" : s.isHardSub ? "[Hard Sub]" : "[Sub]";
+          if (/megaplay\.buzz/i.test(realUrl)) {
+            return extractMegaPlay(realUrl, label, showInfo);
+          } else if (/player\.sgsgsgsr\.site|zencloudz\.cc/i.test(realUrl)) {
+            return extractZen(realUrl, label, showInfo);
+          } else if (/vidwish\.live/i.test(realUrl)) {
+            return extractMegaPlay(realUrl, label, showInfo);
+          }
+          return [];
+        } catch (e) {
+          return [];
         }
-
-        const match = await searchAllWish(mediaInfo);
-        if (!match?.watchUrl) return [];
-
-        const detailHtml = await fetchText(match.watchUrl);
-        const $detail = cheerio.load(detailHtml);
-        const showId = $detail('main > div.container').attr('data-id');
-        if (!showId) return [];
-
-        const vrf = generateEpisodeVrf(showId);
-        const episodeList = await fetchJson(`${MAIN_URL}/ajax/episode/list/${showId}?vrf=${encodeURIComponent(vrf)}`, {
-            headers: AJAX_HEADERS,
-        }).catch(() => null);
-        if (episodeList?.status !== 200) return [];
-
-        const $episodes = cheerio.load(episodeList.result || '');
-        const selectedEpisode = chooseEpisode($episodes, mediaType, episode);
-        if (!selectedEpisode) return [];
-
-        const allowedTypes = [];
-        if (selectedEpisode.hasSub) allowedTypes.push('sub');
-        if (selectedEpisode.hasDub) allowedTypes.push('dub');
-        if (!allowedTypes.length) return [];
-
-        return resolveServerLinks(selectedEpisode.ids, allowedTypes);
-    } catch (error) {
-        console.error(`[AllWish] Error: ${error.message}`);
-        return [];
+      })));
+      return dedupe(results.flat());
+    } catch (e) {
+      console.error("[" + PROVIDER_NAME + "] Server resolve error: " + e.message);
+      return [];
     }
+  });
 }
-
-module.exports = { getStreams };
+function getStreams(tmdbId, mediaType, season, episode) {
+  return __async(this, null, function* () {
+    try {
+      console.log("[" + PROVIDER_NAME + "] Request: ID=" + tmdbId + " Type=" + mediaType + " S=" + season + " E=" + episode);
+      if (mediaType !== "tv" && mediaType !== "movie")
+        return [];
+      const info = yield getTMDBInfo(tmdbId, mediaType);
+      if (!info || !info.title) {
+        console.log("[" + PROVIDER_NAME + "] No TMDB data");
+        return [];
+      }
+      console.log("[" + PROVIDER_NAME + '] Resolved: "' + info.title + '" (' + (info.year || "N/A") + ")");
+      if (info.genres && info.genres.length > 0 && !info.genres.includes(16)) {
+        console.log("[" + PROVIDER_NAME + "] Not anime (genres: " + info.genres.join(",") + "), rejecting");
+        return [];
+      }
+      const match = yield searchAllWish(info.title, info.originalTitle, info.year, season);
+      if (!match || !match.watchUrl) {
+        console.log("[" + PROVIDER_NAME + "] No match on AllWish");
+        return [];
+      }
+      const detailHtml = yield fetchHtml(match.watchUrl);
+      if (!detailHtml)
+        return [];
+      const showId = detailHtml("main > div.container").attr("data-id");
+      if (!showId) {
+        console.log("[" + PROVIDER_NAME + "] No show ID found");
+        return [];
+      }
+      const vrf = generateEpisodeVrf(showId);
+      const epList = yield fetchJson(MAIN_URL + "/ajax/episode/list/" + showId + "?vrf=" + encodeURIComponent(vrf), {
+        headers: AJAX_HEADERS
+      }, EPISODE_LIST_TIMEOUT);
+      if (!epList || epList.status !== 200) {
+        console.log("[" + PROVIDER_NAME + "] Episode list failed");
+        return [];
+      }
+      const $ep = cheerio.load(epList.result || "");
+      const safeEp = episode != null ? Number(episode) : null;
+      const selected = chooseEpisode($ep, season, safeEp, mediaType);
+      if (!selected) {
+        console.log("[" + PROVIDER_NAME + "] Episode not found (looking for ep " + safeEp + ")");
+        return [];
+      }
+      console.log("[" + PROVIDER_NAME + "] Selected episode slug=" + selected.slug + " ids=" + selected.ids.substring(0, 30) + "...");
+      const allowed = [];
+      if (selected.hasSub)
+        allowed.push("sub");
+      if (selected.hasDub)
+        allowed.push("dub");
+      if (allowed.length === 0)
+        return [];
+      const showInfo = { title: info.title, season, episode, mediaType };
+      const streams = yield resolveServers(selected.ids, allowed, showInfo);
+      console.log("[" + PROVIDER_NAME + "] Returning " + streams.length + " streams");
+      const qualityOrder = { "2160p": 5, "4k": 5, "1080p": 3, "720p": 2, "HD": 1, "480p": 1, "360p": 0 };
+      return streams.sort((a, b) => (qualityOrder[b.quality] || 0) - (qualityOrder[a.quality] || 0));
+    } catch (e) {
+      console.error("[" + PROVIDER_NAME + "] Fatal: " + e.message);
+      return [];
+    }
+  });
+}
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { getStreams };
+} else {
+  global.getStreams = getStreams;
+}
