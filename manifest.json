@@ -31,6 +31,19 @@
       "contentLanguage": ["en", "ja"]
     },
     {
+      "id": "anikototv",
+      "name": "AnikotoTV",
+      "description": "Anime provider for AnikotoTV.to via Mapper API + Native Extractor",
+      "version": "1.0.5",
+      "author": "piratezoro9",
+      "supportedTypes": ["movie", "tv", "anime"],
+      "filename": "providers/anikototv.js",
+      "enabled": true,
+      "formats": ["mp4"],
+      "logo": "https://i.postimg.cc/JhL3HBR4/anikototv.png",
+      "contentLanguage": ["en", "ja"]
+    },
+    {
       "id": "animesdigital",
       "name": "AnimesDigital",
       "description": "Watch your favorite anime in Portuguese HD",
